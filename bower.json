@@ -1,0 +1,12 @@
+{
+  "name": "usco-xhr-store",
+  "version": "0.0.1",
+  "main": "lib/xhrStore.js",
+  "private": true,
+  "dependencies": {
+  },
+  "ignore": [
+    "src/"
+    "specs/"
+  ]
+}
