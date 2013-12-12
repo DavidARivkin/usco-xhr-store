@@ -6,7 +6,7 @@
   "dependencies": {
   },
   "ignore": [
-    "src/"
+    "src/",
     "specs/"
   ]
 }
