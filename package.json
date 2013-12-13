@@ -8,14 +8,15 @@
   },
   "main": "./lib/xhrStore",
   "dependencies": {
+    "xhr2": "0.0.7"
   },
   "devDependencies": {
+    "usco-asset-manager": "git://github.com/usco/usco-asset-manager#master",
     "q": "~0.9.6",
     "coffee-script": "~1.6.3",
-    "logerize": "0.0.2",
-    "usco-asset-manager": "git://github.com/usco/usco-asset-manager#master",
     "jasmine-node": "1.10.2",
-    "nock": "~0.25.0"
+    "nock": "~0.25.0",
+    "minilog": "~2.0.2"
   },
   "peerDependencies": {
     "usco-asset-manager": "git://github.com/usco/usco-asset-manager#master"

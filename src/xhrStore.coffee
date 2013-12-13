@@ -1,19 +1,17 @@
 'use strict'
 Q = require "q"
 path = require "path"
-#mime = require "mime"
 
 isNode = typeof global != "undefined" and {}.toString.call(global) == '[object global]'
 
 if(isNode)
-  XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest
+  XMLHttpRequest = require("xhr2").XMLHttpRequest
+  logger = require('minilog')('xhr-store')
+  require('minilog').enable()
 else
   XMLHttpRequest = window.XMLHttpRequest
-
-
-#merge = utils.merge
-logger = require("./logger.coffee")
-logger.level = "critical"
+  logger = Minilog('xhr-store')
+  Minilog.enable();
 
 
 class XHRStore
@@ -30,16 +28,9 @@ class XHRStore
     
     #options = merge defaults, options
     #super options
-    ###
-    #FIXME@vent.on("project:saved",@pushSavedProject)
-    ###
   
   login:=>
-
-  
   logout:=>
-   
-
 
   ###-------------------file/folder manipulation methods----------------###
   
@@ -60,48 +51,58 @@ class XHRStore
   ###
   read:( uri , encoding )=>
     encoding = encoding or 'utf8'
-    return @_request(uri)
+    mimeType = 'text/plain; charset=x-user-defined'
+    logger.debug "reading from #{uri}"
+    return @_request(uri,"GET",mimeType)
  
-  #Helpers
-
+  ###*
+  * get the size of the file at the given uri
+  * @param {String} uri absolute uri of the file whose size we want
+  * @return {Object} a promise, that gets resolved with the content of file at the given uri
+  ###
   stats:( uri )=>
+    logger.debug "getting file size from #{uri}"
     deferred = Q.defer()
 
     request = new XMLHttpRequest()
-    
     request.open("HEAD", uri, true)#HEAD, not get
 
     #size is in bytes
     request.onreadystatechange = () ->
-        if (this.readyState == this.DONE)
-          deferred.resolve parseInt(request.getResponseHeader("Content-Length"))
+      if (request.readyState == request.DONE)
+        deferred.resolve parseInt(request.getResponseHeader("Content-Length"))
 
     request.send()
     return deferred.promise
 
-    
 
-  
+  ###-------------------Helpers----------------###
+
   #ajax request wrapper
+  #type: GET, POST, etc
   _request:(uri, type, mimeType)=>
-    #type: GET, POST, etc
     type = type or "GET"
-    mimeType = mimeType or 'text/plain; charset=x-user-defined'
-    
+    mimeType = mimeType or null
     encoding = encoding or 'utf8'
+    logger.debug("sending xhr2 request: #{type} #{mimeType} #{encoding}")
+
     deferred = Q.defer()
 
     request = new XMLHttpRequest()
 
-    request.open( "GET", uri, true )
-    if mimeType?
+    request.open( type, uri, true )
+    if mimeType? and request.overrideMimeType?
+      logger.debug("support for setting mimetype")
       request.overrideMimeType( mimeType ) 
     
     onLoad= ( event )=>
-      result = event.target.response or event.target.responseText
-      #serializer = new XMLSerializer() #FIXME: needed ???
-      #result = serializer.serializeToString(result)
-      deferred.resolve( result )
+      if event?
+        result = event.target.response or event.target.responseText
+        #serializer = new XMLSerializer() #FIXME: needed ???
+        #result = serializer.serializeToString(result)
+        deferred.resolve( result )
+      else 
+        throw new Error("no event data")
     
     onProgress= ( event )=>
       if (event.lengthComputable)
@@ -110,6 +111,7 @@ class XHRStore
         deferred.notify( {"download":percentComplete,"total":event.total} )
     
     onError= ( event )=>
+      logger.error "error",event
       deferred.reject(event)
     
     request.addEventListener 'load', onLoad, false
@@ -119,7 +121,5 @@ class XHRStore
     
     request.send()
     return deferred.promise
-
-
     
 module.exports = XHRStore
