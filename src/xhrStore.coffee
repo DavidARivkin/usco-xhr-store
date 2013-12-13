@@ -1,18 +1,18 @@
 'use strict'
+detectEnv = require "composite-detect"
 Q = require "q"
 path = require "path"
 
-isNode = typeof global != "undefined" and {}.toString.call(global) == '[object global]'
 
-if(isNode)
+if detectEnv.isNode
   XMLHttpRequest = require("xhr2").XMLHttpRequest
   logger = require('minilog')('xhr-store')
   require('minilog').enable()
-else
+
+if detectEnv.isBrowser and !(dectectEnv.isModule)
   XMLHttpRequest = window.XMLHttpRequest
   logger = Minilog('xhr-store')
   Minilog.enable();
-
 
 class XHRStore
   constructor:(options)->
@@ -121,5 +121,6 @@ class XHRStore
     
     request.send()
     return deferred.promise
-    
-module.exports = XHRStore
+
+if detectEnv.isModule
+  module.exports = XHRStore
