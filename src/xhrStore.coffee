@@ -3,17 +3,20 @@ detectEnv = require "composite-detect"
 Q = require "q"
 path = require "path"
 
+if detectEnv.isModule
+  Minilog=require("minilog")
+  Minilog.pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
+  logger = Minilog('xhr-store')
+
 if detectEnv.isNode
   XMLHttpRequest = require("xhr2").XMLHttpRequest
+  Minilog.pipe(Minilog.backends.console.formatColor).pipe(Minilog.backends.console)
 
 if detectEnv.isBrowser
   XMLHttpRequest = window.XMLHttpRequest
-  #logger = Minilog('xhr-store')
-  #Minilog.enable();
+  Minilog.pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
+  logger = Minilog('xhr-store')
 
-if detectEnv.isModule
-  logger = require('minilog')('xhr-store')
-  require('minilog').enable()
 
 class XHRStore
   constructor:(options)->
