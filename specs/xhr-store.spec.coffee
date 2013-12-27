@@ -1,5 +1,10 @@
 'use strict'
 xhrStore = require "../src/xhrStore"
+Minilog=require("minilog")
+Minilog
+  .suggest
+    .clear()
+    .deny('xhr-store', 'debug')
           
 describe "xhr store tests", ->
   store = null
@@ -15,7 +20,7 @@ describe "xhr store tests", ->
       done()
     .fail ( error ) =>
       console.log "error", error
-  , 400
+  , 2000
 
   it 'can get file size',(done)->
     uri = "http://raw.github.com/kaosat-dev/repBug/master/cad/stl/femur.stl"
@@ -25,4 +30,21 @@ describe "xhr store tests", ->
       done()
     .fail ( error ) =>
       console.log "error", error
-  , 400
+  , 2000
+
+  it 'should fail to fetch data gracefully',(done)->
+    uri = "https://foo.bar.ohmy.com/kaosat-dev/repBug/master/foo/bar.stl"
+    store.read( uri )
+    .fail ( error ) =>
+      expect(error).toBe("Unknown error")
+      done()
+  , 2000
+
+  it 'allows setting timeout',(done)->
+    uri = "https://foo.bar.ohmy.com/kaosat-dev/repBug/master/foo/bar.stl"
+    store.timeout = 20
+    store.read( uri )
+    .fail ( error ) =>
+      expect(error).toBe("Timed out while fetching data from uri")
+      done()
+  , 2000

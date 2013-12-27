@@ -5,16 +5,16 @@ path = require "path"
 
 if detectEnv.isModule
   Minilog=require("minilog")
-  Minilog.pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
+  Minilog.pipe(Minilog.suggest).pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
   logger = Minilog('xhr-store')
 
 if detectEnv.isNode
   XMLHttpRequest = require("xhr2").XMLHttpRequest
-  Minilog.pipe(Minilog.backends.console.formatColor).pipe(Minilog.backends.console)
+  Minilog.pipe(Minilog.suggest).pipe(Minilog.backends.console.formatColor).pipe(Minilog.backends.console)
 
 if detectEnv.isBrowser
   XMLHttpRequest = window.XMLHttpRequest
-  Minilog.pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
+  Minilog.pipe(Minilog.suggest).pipe(Minilog.backends.console.formatClean).pipe(Minilog.backends.console)
   logger = Minilog('xhr-store')
 
 
@@ -29,7 +29,7 @@ class XHRStore
       rootUri:if process? then process.env.HOME or process.env.HOMEPATH or process.env.USERPROFILE else null
       isDataDumpAllowed: false
       showPaths:true
-    
+    @timeout = 3000
     #options = merge defaults, options
     #super options
   
@@ -68,15 +68,18 @@ class XHRStore
     logger.debug "getting file size from #{uri}"
     deferred = Q.defer()
 
-    request = new XMLHttpRequest()
-    request.open("HEAD", uri, true)#HEAD, not get
+    try
+      request = new XMLHttpRequest()
+      request.open("HEAD", uri, true)#HEAD, not get
 
-    #size is in bytes
-    request.onreadystatechange = () ->
-      if (request.readyState == request.DONE)
-        deferred.resolve parseInt(request.getResponseHeader("Content-Length"))
+      #size is in bytes
+      request.onreadystatechange = () ->
+        if (request.readyState == request.DONE)
+          deferred.resolve parseInt(request.getResponseHeader("Content-Length"))
 
-    request.send()
+      request.send()
+    catch error
+      deferred.reject error
     return deferred.promise
 
 
@@ -91,14 +94,11 @@ class XHRStore
     logger.debug("sending xhr2 request: #{type} #{mimeType} #{encoding}")
 
     deferred = Q.defer()
-
-    request = new XMLHttpRequest()
-
-    request.open( type, uri, true )
-    if mimeType? and request.overrideMimeType?
-      logger.debug("support for setting mimetype")
-      request.overrideMimeType( mimeType ) 
-    
+    try
+      request = new XMLHttpRequest() 
+    catch error
+      deferred.reject("Failed to create xmlhttp request")
+   
     onLoad= ( event )=>
       if event?
         result = event.target.response or event.target.responseText
@@ -116,14 +116,31 @@ class XHRStore
     
     onError= ( event )=>
       logger.error "error",event
-      deferred.reject(event)
-    
-    request.addEventListener 'load', onLoad, false
-    request.addEventListener 'loadend', onLoad, false
-    request.addEventListener 'progress', onProgress, false
-    request.addEventListener 'error', onError, false
-    
-    request.send()
+      error = ""
+      switch( request.status )
+        when 404 then error = "Uri not found"
+        else error = "Unknown error"
+
+      deferred.reject(error)
+
+    onTimeOut= ( event )=>
+      logger.error "timeout",event
+      deferred.reject("Timed out while fetching data from uri")
+
+    try
+      request.open( type, uri, true )
+      if mimeType? and request.overrideMimeType?
+        logger.debug("support for setting mimetype")
+        request.overrideMimeType( mimeType ) 
+      request.timeout = @timeout
+      request.addEventListener 'load', onLoad, false
+      request.addEventListener 'loadend', onLoad, false
+      request.addEventListener 'progress', onProgress, false
+      request.addEventListener 'error', onError, false
+      request.addEventListener 'timeout', onTimeOut, false
+      request.send()
+    catch error
+      defferred.reject(error)
     return deferred.promise
 
 if detectEnv.isModule
