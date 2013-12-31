@@ -53,17 +53,17 @@ class XHRStore
   * @param {String} encoding the encoding used to read the file
   * @return {Object} a promise, that gets resolved with the content of file at the given uri
   ###
-  read:( uri , encoding )=>
+  read:( uri, encoding, responseType)=>
     encoding = encoding or 'utf8'
     mimeType = 'text/plain; charset=x-user-defined'
     logger.debug "reading from #{uri}"
-    return @_request(uri,"GET",mimeType)
+    return @_request(uri,"GET",mimeType, responseType)
  
   ###*
   * get the size of the file at the given uri
   * @param {String} uri absolute uri of the file whose size we want
   * @return {Object} a promise, that gets resolved with the content of file at the given uri
-  ###
+  é###
   stats:( uri )=>
     logger.debug "getting file size from #{uri}"
     deferred = Q.defer()
@@ -87,11 +87,12 @@ class XHRStore
 
   #ajax request wrapper
   #type: GET, POST, etc
-  _request:(uri, type, mimeType)=>
+  _request:(uri, type, mimeType, responseType)=>
     type = type or "GET"
     mimeType = mimeType or null
     encoding = encoding or 'utf8'
-    logger.debug("sending xhr2 request: #{type} #{mimeType} #{encoding}")
+    responseType = responseType or null
+    logger.debug("sending xhr2 request: #{type} #{mimeType} #{encoding} #{responseType}")
 
     deferred = Q.defer()
     try
@@ -133,6 +134,7 @@ class XHRStore
         logger.debug("support for setting mimetype")
         request.overrideMimeType( mimeType ) 
       request.timeout = @timeout
+      request.responseType = responseType
       request.addEventListener 'load', onLoad, false
       request.addEventListener 'loadend', onLoad, false
       request.addEventListener 'progress', onProgress, false
