@@ -1,5 +1,6 @@
 'use strict'
-xhrStore = require "../src/xhrStore"
+
+xhrStore = require "../src/xhr-store"
 Minilog=require("minilog")
 Minilog
   .suggest

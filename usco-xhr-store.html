@@ -1,0 +1,17 @@
+<link rel="import" href="../polymer/polymer.html"> 
+<script src="lib/xhr-store.js" />
+
+<polymer-element name="usco-xhr-store" extends="usco-store-base">
+  <script>
+    Polymer('usco-xhr-store', {
+      //lifecycle callbacks
+      created:function()
+      {
+        this.super();
+        XHRStore = require( "xhr-store" );
+        this.store = new XHRStore();
+        this.store.timeout = this.timeout;
+      }
+    });
+  </script>
+</polymer-element>
