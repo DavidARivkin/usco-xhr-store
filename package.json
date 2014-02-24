@@ -22,10 +22,10 @@
     "grunt-browserify-bower": "",
     "grunt-browserify": "",
     "browserify": "",
-    "coffeeify": ""
+    "coffeeify": "",
+    "grunt-bump": "0.0.13"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "scripts": {
     "test": "jasmine-node --coffee specs/"
   }
