@@ -15,7 +15,7 @@ module.exports = (grunt) ->
     bump:
       options:
         files: ['package.json','bower.json']
-        updateConfigs: ['package.json','bower.json']
+        updateConfigs: []
         commit: true
         commitMessage: 'Release of v%VERSION%'
         commitFiles: ['package.json','bower.json'] # '-a' for all files
