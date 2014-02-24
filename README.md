@@ -14,16 +14,9 @@ How to generate browser/polymer.js version (with require support):
 ------------------------------------------------------------------
 Type: 
 
-    browserify -x path -x q -x composite-detect -x minilog  -r ./src/xhr-store.coffee:xhr-store -t coffeeify --extension '.coffee' > lib/xhr-store.js
+  grunt build-browser-lib
 
-
-then replace (manually for now) all entries like this one in the generated file:
-
-  "composite-detect":"awZPbp", etc 
-
-with the correct module names, ie:
-
-   "composite-detect":"composite-detect"
+This will generate the correct browser(ified) version of the source in the lib folder
 
 TODO: 
  - handle dependencies correctly : asset-manager should be kernel, and with a correct version number
