@@ -8,19 +8,23 @@
   },
   "main": "./lib/xhrStore",
   "dependencies": {
-    "xhr2": "0.0.7"
+    "composite-detect": "0.0.3",
+    "minilog": "~2.0.2",
+    "xhr2": "0.0.7",
+    "q": "~0.9.6"
   },
   "devDependencies": {
-    "usco-asset-manager": "git://github.com/usco/usco-asset-manager#master",
-    "q": "~0.9.6",
-    "coffee-script": "~1.6.3",
+    "coffee-script": "",
     "jasmine-node": "1.10.2",
     "nock": "~0.25.0",
-    "minilog": "~2.0.2",
-    "composite-detect": "0.0.3"
+    "http-server": "~0.5.5",
+    "grunt": "",
+    "grunt-browserify-bower": "",
+    "grunt-browserify": "",
+    "browserify": "",
+    "coffeeify": ""
   },
   "peerDependencies": {
-    "usco-asset-manager": "git://github.com/usco/usco-asset-manager#master"
   },
   "scripts": {
     "test": "jasmine-node --coffee specs/"

@@ -1,7 +1,6 @@
-'use strict'
 detectEnv = require "composite-detect"
 Q = require "q"
-path = require "path"
+
 
 if detectEnv.isModule
   Minilog=require("minilog")
