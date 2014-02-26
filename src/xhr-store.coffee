@@ -44,7 +44,7 @@ class XHRStore
   ###
   list:( uri )=>
     deferred = Q.defer()
-    return deferred.promise
+    return deferred
   
   ###*
   * read the file at the given uri, return its content
@@ -69,17 +69,21 @@ class XHRStore
 
     try
       request = new XMLHttpRequest()
+      #handle cancellation  
+      Q.catch deferred.promise, ()->
+        request.abort()
+      
       request.open("HEAD", uri, true)#HEAD, not get
 
       #size is in bytes
       request.onreadystatechange = () ->
         if (request.readyState == request.DONE)
           deferred.resolve parseInt(request.getResponseHeader("Content-Length"))
-
       request.send()
     catch error
       deferred.reject error
-    return deferred.promise
+      
+    return deferred
 
 
   ###-------------------Helpers----------------###
@@ -98,6 +102,10 @@ class XHRStore
       request = new XMLHttpRequest() 
     catch error
       deferred.reject("Failed to create xmlhttp request")
+    
+    #handle cancellation  
+    Q.catch deferred.promise, ()->
+      request.abort()
    
     onLoad= ( event )=>
       if event?
@@ -141,8 +149,9 @@ class XHRStore
       request.addEventListener 'timeout', onTimeOut, false
       request.send()
     catch error
-      defferred.reject(error)
-    return deferred.promise
+      deferred.reject(error)
+      
+    return deferred
 
 if detectEnv.isModule
   module.exports = XHRStore
