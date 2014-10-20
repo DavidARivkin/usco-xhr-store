@@ -119,8 +119,8 @@ class XHRStore
     onProgress= ( event )=>
       if (event.lengthComputable)
         percentComplete = (event.loaded/event.total)*100
-        logger.debug "percent", percentComplete
-        deferred.notify( {"download":percentComplete,"total":event.total} )
+        logger.debug "fetching percent", percentComplete
+        deferred.notify( {"fetching":percentComplete,"total":event.total} )
     
     onError= ( event )=>
       logger.error "error",event
