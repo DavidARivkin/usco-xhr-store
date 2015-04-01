@@ -23,7 +23,6 @@ class XHRStore
     defaults =
       enabled: (if process? then true else false)
       name:"XHR"
-      type:"",
       description: ""
       rootUri:if process? then process.env.HOME or process.env.HOMEPATH or process.env.USERPROFILE else null
       isDataDumpAllowed: false
@@ -56,7 +55,7 @@ class XHRStore
     encoding = encoding or 'utf8'
     mimeType = 'text/plain; charset=x-user-defined'
     logger.debug "reading from #{uri}"
-    return @_request(uri,"GET",mimeType, responseType)
+    return @_request(uri, "GET", mimeType, responseType)
  
   ###*
   * get the size of the file at the given uri
@@ -128,7 +127,6 @@ class XHRStore
       switch( request.status )
         when 404 then error = "Uri not found"
         else error = "Unknown error"
-
       deferred.reject(error)
 
     onTimeOut= ( event )=>

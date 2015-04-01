@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/usco/usco-xhr-store.git"
   },
-  "main": "./lib/xhrStore",
+  "main": "./dist/xhr-store.js",
   "dependencies": {
     "composite-detect": "0.0.3",
     "minilog": "~2.0.2",
