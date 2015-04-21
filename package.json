@@ -9,7 +9,6 @@
   "main": "./src/xhr-store",
   "dependencies": {
     "composite-detect": "0.0.3",
-    "minilog": "~2.0.2",
     "xhr2": "0.0.7",
     "q": "~0.9.6"
   },
