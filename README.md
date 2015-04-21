@@ -16,6 +16,11 @@ Type:
 
   grunt build-browser-lib
 
+How to generate node.js version
+----------------------
+
+  coffee --bare -c -o dist src/xhr-store.coffee
+
 This will generate the correct browser(ified) version of the source in the lib folder
 
 TODO: 
