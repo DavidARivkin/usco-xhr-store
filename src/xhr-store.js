@@ -52,6 +52,49 @@ class XHRStore{
   }
 
 
+  write( uri, data, options={} ){
+    //first do a read, to check if we need a POST or a PATCH
+    let readDef = this.read(uri);
+    let mimeType = undefined;//"application/json;charset=UTF-8";
+    let self = this;
+    let data = data;
+
+    if(options.formatter)
+    {
+      data = options.formatter(data);
+    }
+
+    function onSucess(){
+      //console.log("onSucess")
+      return self._request(uri, "PATCH", mimeType, null, data);
+    }
+
+    function onFail(){
+      //console.log("onFail");
+      //POST at one level above, like standard REST call
+      let upUri = uri.split("/");
+      upUri.pop()
+      upUri = upUri.join("/");
+
+      let postDeferred = self._request(upUri, "POST", mimeType, null, data);
+
+      /*postDeferred.then(
+        function(){console.log("yeah uploaded")},
+        function(error){console(error)},
+        function(progress){console.log("yeah progress",progress)}
+      );*/
+      return postDeferred;
+    }
+
+    //console.log("readDef",readDef)
+
+    return readDef.promise.then(
+      onSucess,
+      onFail
+    );
+  }
+
+
   /**
   * get the size of the file at the given uri
   * @param {String} uri absolute uri of the file whose size we want
@@ -83,16 +126,16 @@ class XHRStore{
 
   /*-------------------Helpers---------------- */
 
-  _request(uri, type, mimeType, responseType) {
+  _request(uri, type, mimeType, responseType=null, data=null) {
     let type = type || "GET";
     let mimeType = mimeType || null;
     let encoding = encoding || 'utf8';
-    let responseType = responseType || null;
 
     log.debug("sending xhr2 request: " + type + " " + mimeType + " " + encoding + " " + responseType);
     
     let deferred = Q.defer();
     let request;
+
     try {
       request = new XMLHttpRequest();
     } catch ( error ) {
@@ -115,6 +158,10 @@ class XHRStore{
 
     function onProgress(event) {
       var percentComplete;
+      if(request.status === 404)
+      { 
+        return onError(event);
+      }
       if (event.lengthComputable) {
         percentComplete = (event.loaded / event.total) * 100;
         log.debug("fetching percent", percentComplete);
@@ -134,6 +181,7 @@ class XHRStore{
           break;
         default:
           error = "Unknown error";
+        break
       }
       return deferred.reject(error);
     };
@@ -157,7 +205,7 @@ class XHRStore{
       request.addEventListener('progress', onProgress, false);
       request.addEventListener('error', onError, false);
       request.addEventListener('timeout', onTimeOut, false);
-      request.send();
+      request.send(data);
     } catch ( error ) {
       deferred.reject(error);
     }
