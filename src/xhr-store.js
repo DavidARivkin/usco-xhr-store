@@ -17,7 +17,7 @@ class XHRStore{
       isDataDumpAllowed: false,
       showPaths: true
     };
-    this.timeout = 3000;
+    this.timeout = 30000;
   }
 
   login() {}
@@ -51,6 +51,16 @@ class XHRStore{
     return this._request(uri, "GET", mimeType, responseType);
   }
 
+  exists( uri, options){
+
+    let deferred = self._request(uri, "GET", null, null, null);
+    return deferred.promise.then(function(){
+      return true
+    },
+    function(){
+      return
+    });
+  }
 
   write( uri, data, options={} ){
     //first do a read, to check if we need a POST or a PATCH
