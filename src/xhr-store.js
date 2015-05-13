@@ -63,6 +63,8 @@ class XHRStore{
   }
 
   write( uri, data, options={} ){
+    //TODO: add cancellation based on deferred.reject
+    let deferred = Q.defer()
     //first do a read, to check if we need a POST or a PATCH
     let readDef = this.read(uri);
     let mimeType = undefined;//"application/json;charset=UTF-8";
@@ -76,7 +78,12 @@ class XHRStore{
 
     function onSucess(){
       //console.log("onSucess")
-      return self._request(uri, "PATCH", mimeType, null, data);
+      let postDeferred = self._request(uri, "PATCH", mimeType, null, data)
+      postDeferred.promise.then(
+        function(value){ deferred.resolve(value) },
+        function(error){deferred.reject(error)},
+        function(progress){deferred.notify(progress)}
+      )
     }
 
     function onFail(){
@@ -86,22 +93,23 @@ class XHRStore{
       upUri.pop()
       upUri = upUri.join("/");
 
-      let postDeferred = self._request(upUri, "POST", mimeType, null, data);
+      let postDeferred = self._request(upUri, "POST", mimeType, null, data)
 
-      /*postDeferred.then(
-        function(){console.log("yeah uploaded")},
-        function(error){console(error)},
-        function(progress){console.log("yeah progress",progress)}
-      );*/
-      return postDeferred;
+      postDeferred.promise.then(
+        function(value){ deferred.resolve(value) },
+        function(error){deferred.reject(error)},
+        function(progress){deferred.notify(progress)}
+      )
+      //return postDeferred;
+
     }
 
     //console.log("readDef",readDef)
-
-    return readDef.promise.then(
+    readDef.promise.then(
       onSucess,
       onFail
-    );
+    )
+    return deferred
   }
 
 
