@@ -44,8 +44,7 @@ class XHRStore{
   * @return {Object} a promise, that gets resolved with the content of file at the given uri
    */
   read(uri, encoding, responseType) {
-    console.log("reading data from xhr")
-    let encoding = encoding || 'utf8';
+    encoding = encoding || 'utf8';
     let mimeType = 'text/plain; charset=x-user-defined';
     log.debug("reading from " + uri);
     return this._request(uri, "GET", mimeType, responseType);
@@ -66,49 +65,115 @@ class XHRStore{
     //TODO: add cancellation based on deferred.reject
     let deferred = Q.defer()
     //first do a read, to check if we need a POST or a PATCH
-    let readDef = this.read(uri);
-    let mimeType = undefined;//"application/json;charset=UTF-8";
-    let self = this;
-    let data = data;
+    let readDef = this.read(uri)
+    let mimeType = undefined//"application/json;charset=UTF-8";
+    let self = this
+    let srcData = data
+
+    let forceWrite = options.forceWrite || false
 
     if(options.formatter)
     {
       data = options.formatter(data);
     }
 
-    function onSucess(){
-      //console.log("onSucess")
+    function onSucceed(value){
+      //console.log("ONvalue",value)
+      deferred.resolve(value)
+    }
+
+    function onError(error){
+      //console.log("ONerror",error)
+      deferred.reject(error)
+    }
+    function onProgress(progress){
+      deferred.notify(progress)
+    }
+
+    function update(){
+      //console.log("onSucess for ", uri)
       let postDeferred = self._request(uri, "PATCH", mimeType, null, data)
       postDeferred.promise.then(
-        function(value){ deferred.resolve(value) },
-        function(error){deferred.reject(error)},
-        function(progress){deferred.notify(progress)}
+        onSucceed,
+        onError,
+        onProgress
       )
     }
 
-    function onFail(){
-      //console.log("onFail");
+    function create(){
+      //console.log("onFail for", uri);
       //POST at one level above, like standard REST call
-      let upUri = uri.split("/");
-      upUri.pop()
-      upUri = upUri.join("/");
+      if(!forceWrite){
+        let upUri = uri.split("/")
+        upUri.pop()
+        uri = upUri.join("/")
+      }
 
-      let postDeferred = self._request(upUri, "POST", mimeType, null, data)
+      //console.log("sending data",srcData)
+     
+      let postDeferred = self._request(uri, "POST", mimeType, null, data)
 
       postDeferred.promise.then(
-        function(value){ deferred.resolve(value) },
-        function(error){deferred.reject(error)},
-        function(progress){deferred.notify(progress)}
+        onSucceed,
+        onError,
+        onProgress
       )
       //return postDeferred;
 
     }
 
     //console.log("readDef",readDef)
+    if(forceWrite){
+      readDef.promise.then(
+        create,
+        create
+      )
+    }else{
+      readDef.promise.then(
+        update,
+        create
+      )
+    }
+   
+    return deferred
+  }
+
+
+  remove(uri, options={} ){
+    //TODO: add cancellation based on deferred.reject
+    let deferred = Q.defer()
+    //first do a read, to check if we need a POST or a PATCH
+    let readDef = this.read(uri)
+    let self = this
+
+    function onSucceed(value){
+      console.log("onSucceed",value)
+      deferred.resolve(value)
+    }
+
+    function onError(error){
+      console.log("ONerror",error)
+      deferred.reject(error)
+    }
+    function onProgress(progress){
+      deferred.notify(progress)
+    }
+
+    function remove(){
+      let postDeferred = self._request(uri, "DELETE", undefined, null, null)
+      return postDeferred.promise.then(
+        onSucceed,
+        onError,
+        onProgress
+      )
+
+    }
+
     readDef.promise.then(
-      onSucess,
-      onFail
+      remove,
+      remove
     )
+
     return deferred
   }
 
@@ -145,11 +210,13 @@ class XHRStore{
   /*-------------------Helpers---------------- */
 
   _request(uri, type, mimeType, responseType=null, data=null) {
-    let type = type || "GET";
-    let mimeType = mimeType || null;
-    let encoding = encoding || 'utf8';
+    //log.setLevel("warn");
 
-    log.debug("sending xhr2 request: " + type + " " + mimeType + " " + encoding + " " + responseType);
+    type = type || "GET"
+    mimeType = mimeType || null
+    let encoding = encoding || 'utf8'
+
+    log.debug("sending xhr2 request: "+uri +" " + type + " " + mimeType + " " + encoding + " " + responseType)
     
     let deferred = Q.defer();
     let request;
@@ -166,20 +233,28 @@ class XHRStore{
 
     function onLoad(event) {
       if (event != null) {
-        let result = event.target.response || event.target.responseText;
-        return deferred.resolve(result);
+        let strErrorCode = ""+request.status
+        if(strErrorCode.length ===3 && ( strErrorCode.charAt(0) === "4" || strErrorCode.charAt(0) === "5") )
+        {
+          onError(event)
+          
+        }else{
+          let result = event.target.response || event.target.responseText;
+          return deferred.resolve(result);
+        }
+       
       }
       else {
-        throw new Error("no event data");
+        return deferred.reject("no event data");
       }
     };
 
     function onProgress(event) {
       var percentComplete;
-      if(request.status === 404)
+      /*if(request.status === 404)
       { 
         return onError(event);
-      }
+      }*/
       if (event.lengthComputable) {
         percentComplete = (event.loaded / event.total) * 100;
         log.debug("fetching percent", percentComplete);
@@ -191,16 +266,8 @@ class XHRStore{
     };
 
     function onError(event) {
-      log.error("error", event);
-      let error = "";
-      switch (request.status) {
-        case 404:
-          error = "Uri not found";
-          break;
-        default:
-          error = "Unknown error";
-        break
-      }
+      log.info("error", event);
+      let error = "error in request";
       return deferred.reject(error);
     };
 
@@ -209,20 +276,51 @@ class XHRStore{
       return deferred.reject("Timed out while fetching data from uri");
     };
 
+    function onLoadEnd(event){
+      //console.log("onLoadEnd",event, request.status, uri)
+      /*let strErrorCode = ""+request.status
+      if(strErrorCode.length ===3)
+      {
+        if( strErrorCode.charAt(0) === "4" || strErrorCode.charAt(0) === "5"){
+        onError(event)
+        }
+      }*/
+
+      if (event != null) {
+        let strErrorCode = ""+request.status
+        if(strErrorCode.length ===3 && ( strErrorCode.charAt(0) === "4" || strErrorCode.charAt(0) === "5") )
+        {
+          onError(event)
+          
+        }else{
+          let result = event.target.response || event.target.responseText;
+          return deferred.resolve(result);
+        }
+       
+      }
+      else {
+        return deferred.reject("no event data");
+      }
+
+    }
 
     try {
       request.open(type, uri, true);
       if ((mimeType != null) && (request.overrideMimeType != null)) {
-        log.debug("support for setting mimetype");
+        log.debug("setting mimetype supported")
         request.overrideMimeType(mimeType);
       }
       request.timeout = this.timeout;
       request.responseType = responseType;
-      request.addEventListener('load', onLoad, false);
-      request.addEventListener('loadend', onLoad, false);
-      request.addEventListener('progress', onProgress, false);
-      request.addEventListener('error', onError, false);
-      request.addEventListener('timeout', onTimeOut, false);
+      //request.addEventListener('load', onLoad, false)
+      request.addEventListener('progress', onProgress, false)
+
+      request.addEventListener('loadend', onLoadEnd, false)
+      
+      //request.addEventListener('abort', onAbort, false)
+      //request.addEventListener('error', onError, false)
+      request.addEventListener('timeout', onTimeOut, false)
+
       request.send(data);
     } catch ( error ) {
       deferred.reject(error);
